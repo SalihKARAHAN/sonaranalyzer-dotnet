@@ -145,7 +145,7 @@ namespace SonarAnalyzer.UnitTest
                         expectedIssues.Remove(line);
                     }
 
-                    exactLocations.Should().BeEmpty($"Issue expected but not found on line(s) {string.Join(",", expectedLocations.Keys)}");
+                    exactLocations.Should().BeEmpty($"Issue expected but not found on line(s) {string.Join(",", exactLocations.Keys)}");
                     Assert.AreEqual(0, expectedIssues.Count, $"Issue not expected but found on line(s) {string.Join(",", expectedIssues.Keys)}.");
                 }
             }

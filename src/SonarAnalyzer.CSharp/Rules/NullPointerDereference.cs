@@ -97,12 +97,9 @@ namespace SonarAnalyzer.Rules.CSharp
 
             }
 
-            private void OnMemberAccessed(IdentifierNameSyntax identifier)
+            private void OnMemberAccessed(IdentifierNameSyntax identifier, ISymbol symbol)
             {
-                MemberAccessed?.Invoke(this, new MemberAccessedEventArgs
-                {
-                    Identifier = identifier
-                });
+                MemberAccessed?.Invoke(this, new MemberAccessedEventArgs(identifier, symbol, explodedGraph.CurrentNode));
             }
 
             public override ProgramState PreProcessInstruction(ProgramPoint programPoint, ProgramState programState)
@@ -236,7 +233,7 @@ namespace SonarAnalyzer.Rules.CSharp
                 if (explodedGraph.IsSymbolTracked(symbol) &&
                     symbol.HasConstraint(ObjectConstraint.Null, programState))
                 {
-                    OnMemberAccessed(identifier);
+                    OnMemberAccessed(identifier, symbol);
                     return null;
                 }
 

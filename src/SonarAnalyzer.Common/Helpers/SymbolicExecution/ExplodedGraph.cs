@@ -47,6 +47,8 @@ namespace SonarAnalyzer.Helpers.FlowAnalysis.Common
 
         internal SemanticModel SemanticModel { get; }
 
+        public ExplodedGraphNode CurrentNode => this.nodes.FirstOrDefault();
+
         public event EventHandler ExplorationEnded;
         public event EventHandler MaxStepCountReached;
         public event EventHandler MaxInternalStateCountReached;
@@ -201,7 +203,8 @@ namespace SonarAnalyzer.Helpers.FlowAnalysis.Common
             ConditionEvaluated?.Invoke(this, new ConditionEvaluatedEventArgs
             {
                 Condition = condition,
-                EvaluationValue = evaluationValue
+                EvaluationValue = evaluationValue,
+                Node = CurrentNode
             });
         }
 
@@ -353,7 +356,7 @@ namespace SonarAnalyzer.Helpers.FlowAnalysis.Common
                 return;
             }
 
-            var newNode = new ExplodedGraphNode(pos, programState.AddVisit(pos));
+            var newNode = new ExplodedGraphNode(pos, programState.AddVisit(pos), CurrentNode);
             if (nodesAlreadyInGraph.Add(newNode))
             {
                 workList.Enqueue(newNode);

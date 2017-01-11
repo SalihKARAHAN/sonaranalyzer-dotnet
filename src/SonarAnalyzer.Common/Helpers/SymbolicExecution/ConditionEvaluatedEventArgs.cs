@@ -27,5 +27,6 @@ namespace SonarAnalyzer.Helpers.FlowAnalysis.Common
     {
         public SyntaxNode Condition { get; set; }
         public bool EvaluationValue { get; set; }
+        internal ExplodedGraphNode Node { get; set; }
     }
 }

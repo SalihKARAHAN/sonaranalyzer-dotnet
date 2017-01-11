@@ -26,11 +26,13 @@ namespace SonarAnalyzer.Helpers.FlowAnalysis.Common
     {
         public ProgramState ProgramState { get; }
         public ProgramPoint ProgramPoint { get; }
+        public ExplodedGraphNode Previous { get; }
 
-        public ExplodedGraphNode(ProgramPoint programPoint, ProgramState programState)
+        public ExplodedGraphNode(ProgramPoint programPoint, ProgramState programState, ExplodedGraphNode previousNode)
         {
             ProgramState = programState;
             ProgramPoint = programPoint;
+            Previous = previousNode;
         }
 
         public override bool Equals(object obj)

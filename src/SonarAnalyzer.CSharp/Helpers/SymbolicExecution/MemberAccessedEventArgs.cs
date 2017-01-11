@@ -18,13 +18,23 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace SonarAnalyzer.Helpers.FlowAnalysis.Common
 {
     internal class MemberAccessedEventArgs : EventArgs
     {
-        public IdentifierNameSyntax Identifier { get; set; }
+        public IdentifierNameSyntax Identifier { get; }
+        public ISymbol Symbol { get; }
+        public ExplodedGraphNode Node { get; }
+
+        public MemberAccessedEventArgs(IdentifierNameSyntax identifier, ISymbol symbol, ExplodedGraphNode node)
+        {
+            Identifier = identifier;
+            Symbol = symbol;
+            Node = node;
+        }
     }
 }

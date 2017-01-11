@@ -89,12 +89,9 @@ namespace SonarAnalyzer.Rules.CSharp
             {
             }
 
-            private void OnValuePropertyAccessed(IdentifierNameSyntax identifier)
+            private void OnValuePropertyAccessed(IdentifierNameSyntax identifier, ISymbol symbol)
             {
-                ValuePropertyAccessed?.Invoke(this, new MemberAccessedEventArgs
-                {
-                    Identifier = identifier
-                });
+                ValuePropertyAccessed?.Invoke(this, new MemberAccessedEventArgs(identifier, symbol, explodedGraph.CurrentNode));
             }
 
             public override ProgramState PreProcessInstruction(ProgramPoint programPoint, ProgramState programState)
@@ -123,7 +120,7 @@ namespace SonarAnalyzer.Rules.CSharp
 
                 if (symbol.HasConstraint(ObjectConstraint.Null, programState))
                 {
-                    OnValuePropertyAccessed(identifier);
+                    OnValuePropertyAccessed(identifier, symbol);
                     return null;
                 }
 
