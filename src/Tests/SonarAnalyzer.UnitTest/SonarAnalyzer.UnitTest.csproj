@@ -150,6 +150,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="FixAllDiagnosticProvider.cs" />
     <Compile Include="ResourceTests\GeneratedResourcesTest.cs" />
+    <Compile Include="TestFramework\IIssueLocation.cs" />
+    <Compile Include="TestFramework\IssueLocationCollector.cs" />
+    <Compile Include="TestFramework\IssueLocationCollectorTests\IssueLocationCollector_GetIssueLocation.cs" />
     <Compile Include="Verifier.cs" />
     <Compile Include="Rules\*.cs" />
     <None Include="app.config" />

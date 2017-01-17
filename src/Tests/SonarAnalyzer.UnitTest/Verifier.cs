@@ -23,7 +23,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SonarAnalyzer.Helpers;
 using System.Collections.Generic;
@@ -38,6 +37,7 @@ using System.Threading.Tasks;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using VB = Microsoft.CodeAnalysis.VisualBasic;
 using System;
+using SonarAnalyzer.UnitTest.TestFramework;
 
 namespace SonarAnalyzer.UnitTest
 {
@@ -84,6 +84,8 @@ namespace SonarAnalyzer.UnitTest
             var file = new FileInfo(path);
             var parseOptions = GetParseOptionsAlternatives(options, file.Extension);
 
+            var issueLocationCollector = new IssueLocationCollector();
+
             using (var workspace = new AdhocWorkspace())
             {
                 var document = GetDocument(file, GeneratedAssemblyName, workspace, additionalReferences: additionalReferences);
@@ -98,12 +100,14 @@ namespace SonarAnalyzer.UnitTest
 
                     var compilation = project.GetCompilationAsync().Result;
                     var diagnostics = GetDiagnostics(compilation, diagnosticAnalyzer);
-                    var expectedIssues = ExpectedIssues(compilation.SyntaxTrees.First());
+                    var expectedIssues = issueLocationCollector
+                        .GetExpectedIssueLocations(compilation)
+                        .ToDictionary(l => l.LineNumber, l => l);
 
                     var language = file.Extension == CSharpFileExtension
                         ? LanguageNames.CSharp
                         : LanguageNames.VisualBasic;
-                    var expectedLocations = ExpectedIssueLocations(compilation.SyntaxTrees.First(), language);
+                    var exactLocations = GetExactIssueLocations(compilation.SyntaxTrees.First(), language);
 
                     foreach (var diagnostic in diagnostics)
                     {
@@ -114,18 +118,17 @@ namespace SonarAnalyzer.UnitTest
                         }
 
                         var expectedMessage = expectedIssues[line];
-                        if (expectedMessage != null)
+                        if (expectedMessage.Message != null)
                         {
                             var message = diagnostic.GetMessage();
 
-                            Assert.AreEqual(expectedMessage,
-                                message,
+                            Assert.AreEqual(expectedMessage.Message, message,
                                 $"Message does not match expected on line {line}");
                         }
 
-                        if (expectedLocations.ContainsKey(line))
+                        if (exactLocations.ContainsKey(line))
                         {
-                            var expectedLocation = expectedLocations[line];
+                            var expectedLocation = exactLocations[line];
 
                             var diagnosticStart = diagnostic.Location.GetLineSpan().StartLinePosition.Character;
                             Assert.AreEqual(expectedLocation.StartPosition, diagnosticStart,
@@ -136,13 +139,13 @@ namespace SonarAnalyzer.UnitTest
                                 $"The length of the diagnostic ({diagnostic.Location.SourceSpan.Length}) doesn't match " +
                                 $"the expected value ({expectedLocation.Length}) in line {line}.");
 
-                            expectedLocations.Remove(line);
+                            exactLocations.Remove(line);
                         }
 
                         expectedIssues.Remove(line);
                     }
 
-                    expectedLocations.Should().BeEmpty($"Issue expected but not found on line(s) {string.Join(",", expectedLocations.Keys)}");
+                    exactLocations.Should().BeEmpty($"Issue expected but not found on line(s) {string.Join(",", expectedLocations.Keys)}");
                     Assert.AreEqual(0, expectedIssues.Count, $"Issue not expected but found on line(s) {string.Join(",", expectedIssues.Keys)}.");
                 }
             }
@@ -356,7 +359,7 @@ namespace SonarAnalyzer.UnitTest
             }
         }
 
-        private static Dictionary<int, ExactIssueLocation> ExpectedIssueLocations(SyntaxTree syntaxTree, string language)
+        private static Dictionary<int, ExactIssueLocation> GetExactIssueLocations(SyntaxTree syntaxTree, string language)
         {
             var exactLocations = new Dictionary<int, ExactIssueLocation>();
 
@@ -389,59 +392,6 @@ namespace SonarAnalyzer.UnitTest
             }
 
             return exactLocations;
-        }
-
-        private static Dictionary<int, string> ExpectedIssues(SyntaxTree syntaxTree)
-        {
-            var expectedIssueMessage = new Dictionary<int, string>();
-
-            foreach (var line in syntaxTree.GetText().Lines)
-            {
-                var lineText = line.ToString();
-                if (!lineText.Contains(NONCOMPLIANT_START))
-                {
-                    continue;
-                }
-
-                var lineNumber = GetNonCompliantLineNumber(line);
-
-                expectedIssueMessage.Add(lineNumber, null);
-
-                var match = Regex.Match(lineText, NONCOMPLIANT_MESSAGE_PATTERN);
-                if (!match.Success)
-                {
-                    continue;
-                }
-
-                var message = match.Groups[1].ToString();
-                expectedIssueMessage[lineNumber] = message.Substring(2, message.Length - 4);
-            }
-
-            return expectedIssueMessage;
-        }
-
-        private static int GetNonCompliantLineNumber(TextLine line)
-        {
-            var text = line.ToString();
-            var match = Regex.Match(text, NONCOMPLIANT_LINE_PATTERN);
-            if (!match.Success)
-            {
-                return line.LineNumber + 1;
-            }
-
-            var sign = match.Groups[1];
-            var lineValue = int.Parse(match.Groups[2].Value);
-            if (sign.Value == "+")
-            {
-                return line.LineNumber + 1 + lineValue;
-            }
-
-            if (sign.Value == "-")
-            {
-                return line.LineNumber + 1 - lineValue;
-            }
-
-            return lineValue;
         }
 
         #endregion
